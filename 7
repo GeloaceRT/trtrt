@@ -1,16 +1,27 @@
-hosts: workstations
-become: true
-tasks:
+- name: Copy Prometheus binaries to /usr/local/bin
+      copy:
+        src: "/path/to/prometheus-2.48.1.linux-amd64/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        mode: '0755'
+      loop:
+        - prometheus
+        - promtool
 
--  name: install unzip
-   package:
-       name: unzip
+    - name: Create Prometheus directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /etc/prometheus
+        - /var/lib/prometheus
 
--  name: install terraform
-   unarchive:
-       src: https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip
-        dest: /usr/local/bin
-      remote_src: yes
-      mode: 0755
-      owner: root
-      group: root
+    - name: Move configuration files to /etc/prometheus
+      copy:
+        src: "/path/to/prometheus-2.48.1.linux-amd64/{{ item }}"
+        dest: "/etc/prometheus/{{ item }}"
+        remote_src: yes
+      loop:
+        - prometheus.yml
+        - consoles
+        - console_libraries
