@@ -1,0 +1,62 @@
+- name: Install dependencies for Ubuntu
+  apt:
+    name: gnupg
+    state: present
+    update_cache: yes
+  become: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: Add Elastic APT repository key (Ubuntu)
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  when: ansible_distribution == "Ubuntu"
+
+- name: Add Elastic APT repository (Ubuntu)
+  apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+    state: present
+  when: ansible_distribution == "Ubuntu"
+
+- name: Install Logstash on Ubuntu
+  apt:
+    name: logstash
+    state: present
+  when: ansible_distribution == "Ubuntu"
+
+- name: Start and Enable Logstash service (Ubuntu)
+  systemd:
+    name: logstash
+    enabled: yes
+    state: started
+  when: ansible_distribution == "Ubuntu"
+
+- name: Install dependencies for CentOS
+  yum:
+    name: epel-release
+    state: present
+  become: yes
+  when: ansible_distribution == "CentOS"
+
+- name: Add Elastic YUM repository (CentOS)
+  yum_repository:
+    name: elastic-7.x
+    description: Elastic repository for 7.x packages
+    baseurl: https://artifacts.elastic.co/packages/7.x/yum
+    gpgcheck: yes
+    gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+
+- name: Install Logstash on CentOS
+  yum:
+    name: logstash
+    state: present
+  when: ansible_distribution == "CentOS"
+
+- name: Start and Enable Logstash service (CentOS)
+  systemd:
+    name: logstash
+    enabled: yes
+    state: started
+  when: ansible_distribution == "CentOS"
