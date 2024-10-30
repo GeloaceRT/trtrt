@@ -4,43 +4,53 @@
     name: gnupg
     state: present
     update_cache: yes
+  become: yes
+  when: ansible_distribution == "Ubuntu"
 
 - name: Add Elastic APT repository key (Ubuntu)
   apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
+  when: ansible_distribution == "Ubuntu"
 
 - name: Add Elastic APT repository (Ubuntu)
   apt_repository:
     repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
     state: present
+  when: ansible_distribution == "Ubuntu"
 
 - name: Install Kibana (Ubuntu)
   apt:
     name: kibana
     state: present
+  when: ansible_distribution == "Ubuntu"
 
 - name: Configure Kibana (Ubuntu)
   template:
     src: kibana.yml.j2
     dest: /etc/kibana/kibana.yml
+  when: ansible_distribution == "Ubuntu"
 
 - name: Start and enable Kibana service (Ubuntu)
   systemd:
     name: kibana
     enabled: yes
     state: started
+  when: ansible_distribution == "Ubuntu"
 
 # Install Kibana on CentOS
 - name: Install dependencies (CentOS)
   yum:
     name: gnupg
     state: present
+  become: yes
+  when: ansible_distribution == "CentOS"
 
 - name: Add Elastic GPG key (CentOS)
   rpm_key:
     state: present
     key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+  when: ansible_distribution == "CentOS"
 
 - name: Add Elastic repository (CentOS)
   yum_repository:
@@ -50,19 +60,23 @@
     gpgcheck: yes
     enabled: yes
     gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+  when: ansible_distribution == "CentOS"
 
 - name: Install Kibana (CentOS)
   yum:
     name: kibana
     state: present
+  when: ansible_distribution == "CentOS"
 
 - name: Configure Kibana (CentOS)
   template:
     src: kibana.yml.j2
     dest: /etc/kibana/kibana.yml
+  when: ansible_distribution == "CentOS"
 
 - name: Start and enable Kibana service (CentOS)
   systemd:
     name: kibana
     enabled: yes
     state: started
+  when: ansible_distribution == "CentOS"
