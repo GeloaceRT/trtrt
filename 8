@@ -1,0 +1,68 @@
+# Install Kibana on Ubuntu
+- name: Install dependencies (Ubuntu)
+  apt:
+    name: gnupg
+    state: present
+    update_cache: yes
+
+- name: Add Elastic APT repository key (Ubuntu)
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elastic APT repository (Ubuntu)
+  apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+    state: present
+
+- name: Install Kibana (Ubuntu)
+  apt:
+    name: kibana
+    state: present
+
+- name: Configure Kibana (Ubuntu)
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+
+- name: Start and enable Kibana service (Ubuntu)
+  systemd:
+    name: kibana
+    enabled: yes
+    state: started
+
+# Install Kibana on CentOS
+- name: Install dependencies (CentOS)
+  yum:
+    name: gnupg
+    state: present
+
+- name: Add Elastic GPG key (CentOS)
+  rpm_key:
+    state: present
+    key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+- name: Add Elastic repository (CentOS)
+  yum_repository:
+    name: elastic-7.x
+    description: Elastic Repository for 7.x packages
+    baseurl: https://artifacts.elastic.co/packages/7.x/yum
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+- name: Install Kibana (CentOS)
+  yum:
+    name: kibana
+    state: present
+
+- name: Configure Kibana (CentOS)
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+
+- name: Start and enable Kibana service (CentOS)
+  systemd:
+    name: kibana
+    enabled: yes
+    state: started
