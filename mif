@@ -1,62 +1,65 @@
 ---
-- name: Set up InfluxDB repository for CentOS
+- name: Install and configure InfluxDB on Ubuntu and CentOS
+  hosts: all
   become: yes
-  copy:
-    content: |
-      [influxdb]
-      name = InfluxDB Repository
-      baseurl = https://repos.influxdata.com/centos/7/x86_64/stable/
-      enabled = 1
-      gpgcheck = 1
-      gpgkey = https://repos.influxdata.com/influxdb.key
-    dest: /etc/yum.repos.d/influxdb.repo
-  when: ansible_distribution == "CentOS"
+  vars:
+    influx_repo_url_ubuntu: "https://repos.influxdata.com/influxdb.key"
+    influx_repo_url_centos: "https://repos.influxdata.com/centos/7/x86_64/stable/"
+    influx_gpg_key_url: "https://repos.influxdata.com/influxdb.key"
 
-- name: Install InfluxDB in CentOS
-  become: yes
-  tags: influx
-  yum:
-    name: influxdb
-    state: latest
-  when: ansible_distribution == "CentOS"
+  tasks:
+    # Task for CentOS
+    - name: Import InfluxDB GPG key for CentOS
+      rpm_key:
+        state: present
+        key: "{{ influx_gpg_key_url }}"
+      when: ansible_distribution == "CentOS"
 
-- name: Install InfluxDB in Ubuntu
-  tags: influx
-  become: yes
-  apt:
-    name: influxdb
-    state: latest
-  when: ansible_distribution == "Ubuntu"
+    - name: Set up InfluxDB repository for CentOS
+      copy:
+        content: |
+          [influxdb]
+          name = InfluxDB Repository
+          baseurl = {{ influx_repo_url_centos }}
+          enabled = 1
+          gpgcheck = 1
+          gpgkey = {{ influx_gpg_key_url }}
+        dest: /etc/yum.repos.d/influxdb.repo
+      when: ansible_distribution == "CentOS"
 
-- name: start influxdb
-  tags: influx
-  service:
-    name: influxdb
-    state: started
+    - name: Install InfluxDB on CentOS
+      yum:
+        name: influxdb
+        state: latest
+      when: ansible_distribution == "CentOS"
 
-- name: enable influxdb
-  tags: influx
-  service:
-    name: influxdb
-    enabled: yes
+    # Task for Ubuntu
+    - name: Import InfluxDB GPG key for Ubuntu
+      apt_key:
+        url: "{{ influx_repo_url_ubuntu }}"
+        state: present
+      when: ansible_distribution == "Ubuntu"
 
-- name: Copy InfluxDB configuration file
-  tags: influx
-  template:
-    src: influxdb.repo.j2
-    dest: /etc/yum.repos.d/influxdb.repo
-  when: ansible_distribution == "CentOS"
+    - name: Set up InfluxDB repository for Ubuntu
+      template:
+        src: influxdb.repo.j2
+        dest: /etc/apt/sources.list.d/influxdb.list
+      when: ansible_distribution == "Ubuntu"
 
-- name: Copy InfluxDB configuration file
-  tags: influx
-  template:
-    src: influxdb.repo.j2
-    dest: /etc/apt/sources.list.d/influxdb.list
-  when: ansible_distribution == "Ubuntu"
+    - name: Install InfluxDB on Ubuntu
+      apt:
+        name: influxdb
+        state: latest
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
 
-- name: Import InfluxDB GPG key
-  tags: influx
-  apt_key:
-    url: https://repos.influxdata.com/influxdb.key
-    state: present
-  when: ansible_distribution == "Ubuntu"
+    # Start and enable InfluxDB service
+    - name: Start InfluxDB service
+      service:
+        name: influxdb
+        state: started
+
+    - name: Enable InfluxDB service at boot
+      service:
+        name: influxdb
+        enabled: yes
