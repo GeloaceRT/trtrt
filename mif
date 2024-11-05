@@ -1,65 +1,56 @@
----
-- name: Install and configure InfluxDB on Ubuntu and CentOS
+- name: Install InfluxDB
   hosts: all
   become: yes
-  vars:
-    influx_repo_url_ubuntu: "https://repos.influxdata.com/influxdb.key"
-    influx_repo_url_centos: "https://repos.influxdata.com/centos/7/x86_64/stable/"
-    influx_gpg_key_url: "https://repos.influxdata.com/influxdb.key"
 
   tasks:
-    # Task for CentOS
-    - name: Import InfluxDB GPG key for CentOS
-      rpm_key:
+    - name: Add InfluxDB repository (Ubuntu)
+      apt_repository:
+        repo: deb [signed-by=/etc/apt/trusted.gpg.d/influxdb-archive_compat.gpg] https://repos.influxdata.com/debian stable main
         state: present
-        key: "{{ influx_gpg_key_url }}"
-      when: ansible_distribution == "CentOS"
+      when: ansible_distribution == "Ubuntu"
 
-    - name: Set up InfluxDB repository for CentOS
-      copy:
-        content: |
-          [influxdb]
-          name = InfluxDB Repository
-          baseurl = {{ influx_repo_url_centos }}
-          enabled = 1
-          gpgcheck = 1
-          gpgkey = {{ influx_gpg_key_url }}
-        dest: /etc/yum.repos.d/influxdb.repo
-      when: ansible_distribution == "CentOS"
-
-    - name: Install InfluxDB on CentOS
-      yum:
+    - name: Add InfluxDB repository (CentOS)
+      yum_repository:
         name: influxdb
-        state: latest
+        description: InfluxDB Repository - Stable
+        baseurl: https://repos.influxdata.com/centos/
+        gpgcheck: 1
+        gpgkey: https://repos.influxdata.com/influxdb.key
       when: ansible_distribution == "CentOS"
 
-    # Task for Ubuntu
-    - name: Import InfluxDB GPG key for Ubuntu
-      apt_key:
-        url: "{{ influx_repo_url_ubuntu }}"
-        state: present
-      when: ansible_distribution == "Ubuntu"
-
-    - name: Set up InfluxDB repository for Ubuntu
-      template:
-        src: influxdb.repo.j2
-        dest: /etc/apt/sources.list.d/influxdb.list
-      when: ansible_distribution == "Ubuntu"
-
-    - name: Install InfluxDB on Ubuntu
+    - name: Update package lists
       apt:
-        name: influxdb
-        state: latest
         update_cache: yes
       when: ansible_distribution == "Ubuntu"
 
-    # Start and enable InfluxDB service
-    - name: Start InfluxDB service
+    - name: Update package lists
+      yum:
+        name: '*'
+        state: latest
+      when: ansible_distribution == "CentOS"
+
+    - name: Install InfluxDB
+      package:
+        name: influxdb
+        state: present
+
+    - name: Start and enable InfluxDB service
       service:
         name: influxdb
         state: started
+        enabled: yes
 
-    - name: Enable InfluxDB service at boot
+    - name: Copy InfluxDB configuration file (Optional)
+      template:
+        src: influxdb.conf.j2
+        dest: /etc/influxdb/influxdb.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restart InfluxDB service
+  
+  handlers:
+    - name: Restart InfluxDB service
       service:
         name: influxdb
-        enabled: yes
+        state: restarted
