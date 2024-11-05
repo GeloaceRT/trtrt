@@ -1,4 +1,17 @@
 ---
+- name: Set up InfluxDB repository for CentOS
+  become: yes
+  copy:
+    content: |
+      [influxdb]
+      name = InfluxDB Repository
+      baseurl = https://repos.influxdata.com/centos/7/x86_64/stable/
+      enabled = 1
+      gpgcheck = 1
+      gpgkey = https://repos.influxdata.com/influxdb.key
+    dest: /etc/yum.repos.d/influxdb.repo
+  when: ansible_distribution == "CentOS"
+
 - name: Install InfluxDB in CentOS
   become: yes
   tags: influx
