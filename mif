@@ -1,0 +1,49 @@
+---
+- name: Install InfluxDB in CentOS
+  become: yes
+  tags: influx
+  yum:
+    name: influxdb
+    state: latest
+  when: ansible_distribution == "CentOS"
+
+- name: Install InfluxDB in Ubuntu
+  tags: influx
+  become: yes
+  apt:
+    name: influxdb
+    state: latest
+  when: ansible_distribution == "Ubuntu"
+
+- name: start influxdb
+  tags: influx
+  service:
+    name: influxdb
+    state: started
+
+- name: enable influxdb
+  tags: influx
+  service:
+    name: influxdb
+    enabled: yes
+
+- name: Copy InfluxDB configuration file
+  tags: influx
+  template:
+    src: influxdb.repo.j2
+    dest: /etc/yum.repos.d/influxdb.repo
+  when: ansible_distribution == "CentOS"
+
+- name: Copy InfluxDB configuration file
+  tags: influx
+  template:
+    src: influxdb.repo.j2
+    dest: /etc/apt/sources.list.d/influxdb.list
+  when: ansible_distribution == "Ubuntu"
+
+- name: Import InfluxDB GPG key
+  tags: influx
+  apt_key:
+    url: https://repos.influxdata.com/influxdb.key
+    state: present
+  when: ansible_distribution == "Ubuntu"
