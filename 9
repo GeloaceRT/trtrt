@@ -1,62 +1,38 @@
-- name: Install dependencies for Ubuntu
-  apt:
-    name: gnupg
-    state: present
-    update_cache: yes
-  become: yes
-  when: ansible_distribution == "Ubuntu"
+# Define the base OS image to use (default is Ubuntu)
+ARG BASE_IMAGE=ubuntu:latest
+FROM ${BASE_IMAGE}
 
-- name: Add Elastic APT repository key (Ubuntu)
-  apt_key:
-    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-    state: present
-  when: ansible_distribution == "Ubuntu"
+MAINTAINER Gelo <qaezamora@tip.edu.ph>
 
-- name: Add Elastic APT repository (Ubuntu)
-  apt_repository:
-    repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
-    state: present
-  when: ansible_distribution == "Ubuntu"
+ARG DEBIAN_FRONTEND=noninteractive
+ARG INSTALL_APACHE=true
+ARG INSTALL_PHP=true
+ARG INSTALL_MARIADB=true
 
-- name: Install Logstash on Ubuntu
-  apt:
-    name: logstash
-    state: present
-  when: ansible_distribution == "Ubuntu"
+# Update and install dependencies based on OS
+RUN if [ "$BASE_IMAGE" = "ubuntu:latest" ]; then \
+        apt-get update -y && \
+        apt-get upgrade -y && \
+        apt-get install apache2 php libapache2-mod-php mariadb-server mariadb-client -y; \
+    elif [ "$BASE_IMAGE" = "centos:latest" ]; then \
+        yum -y update && \
+        yum -y upgrade && \
+        yum -y install httpd php php-mysqlnd mariadb-server mariadb; \
+    fi
 
-- name: Start and Enable Logstash service (Ubuntu)
-  systemd:
-    name: logstash
-    enabled: yes
-    state: started
-  when: ansible_distribution == "Ubuntu"
+# Start Apache service depending on the OS
+RUN if [ "$BASE_IMAGE" = "ubuntu:latest" ]; then \
+        /etc/init.d/apache2 start; \
+    elif [ "$BASE_IMAGE" = "centos:latest" ]; then \
+        systemctl enable httpd && systemctl start httpd; \
+    fi
 
-- name: Install dependencies for CentOS
-  yum:
-    name: epel-release
-    state: present
-  become: yes
-  when: ansible_distribution == "CentOS"
+# Expose port 80 for web traffic
+EXPOSE 80
 
-- name: Add Elastic YUM repository (CentOS)
-  yum_repository:
-    name: elastic-7.x
-    description: Elastic repository for 7.x packages
-    baseurl: https://artifacts.elastic.co/packages/7.x/yum
-    gpgcheck: yes
-    gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-    enabled: yes
-  when: ansible_distribution == "CentOS"
-
-- name: Install Logstash on CentOS
-  yum:
-    name: logstash
-    state: present
-  when: ansible_distribution == "CentOS"
-
-- name: Start and Enable Logstash service (CentOS)
-  systemd:
-    name: logstash
-    enabled: yes
-    state: started
-  when: ansible_distribution == "CentOS"
+# Default command to run Apache in the foreground
+ENTRYPOINT if [ "$BASE_IMAGE" = "ubuntu:latest" ]; then \
+                apache2ctl -D FOREGROUND; \
+            elif [ "$BASE_IMAGE" = "centos:latest" ]; then \
+                httpd -D FOREGROUND; \
+            fi
