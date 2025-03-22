@@ -1,0 +1,21 @@
+---
+- name: Collect system logs from Control Node to Manage Node using journalctl
+  hosts: control_node
+  become: true  # Run tasks with sudo
+  tasks:
+    - name: Ensure the logs directory exists on Manage Node
+      ansible.builtin.file:
+        path: "/home/zamora/logs"
+        state: directory
+        mode: '0755'
+
+    - name: Collect system logs from the last day using journalctl (locally on Control Node)
+      ansible.builtin.shell:
+        cmd: "journalctl --since '1 day ago' > /home/your_user/journal_logs.txt"
+      delegate_to: localhost
+
+    - name: Fetch journal logs file to Manage Node
+      ansible.builtin.fetch:
+        src: "/home/your_user/journal_logs.txt"
+        dest: "/home/zamora/logs/"
+        flat: yes
