@@ -1,0 +1,99 @@
+---
+- name: Create SSL Certificate Authority (CA) on Control Node
+  hosts: ManageNode  # The Manage Node triggers the task on the Control Node
+  gather_facts: no
+  vars:
+    # Paths for CA setup
+    control_node: "192.168.56.12"  # IP address of the Control Node
+    ca_dir: "/home/zamora/ssl_ca"
+    ca_key: "{{ ca_dir }}/private/ca.key"
+    ca_cert: "{{ ca_dir }}/certs/ca.crt"
+    ca_index: "{{ ca_dir }}/index"
+    ca_serial: "{{ ca_dir }}/serial"
+    # Password for the CA private key
+    ca_password: "yourpassword"
+
+  tasks:
+    - name: Ensure the CA directory structure exists on Control Node
+      file:
+        path: "{{ ca_dir }}"
+        state: directory
+        recurse: yes
+        owner: zamora
+        group: zamora
+        mode: '0755'
+      delegate_to: "{{ control_node }}"
+      tags:
+        - setup
+        - directory_creation
+
+    - name: Install OpenSSL on Control Node
+      apt:
+        name: openssl
+        state: present
+      become: yes
+      delegate_to: "{{ control_node }}"
+      tags:
+        - setup
+        - openssl_install
+
+    - name: Generate the Certificate Authority private key
+      command: >
+        openssl genpkey -algorithm RSA -out {{ ca_key }} -aes256 -passout pass:{{ ca_password }}
+      delegate_to: "{{ control_node }}"
+      tags:
+        - ca_creation
+        - private_key
+
+    - name: Generate the self-signed CA certificate
+      command: >
+        openssl req -key {{ ca_key }} -new -x509 -out {{ ca_cert }} -days 3650 -passin pass:{{ ca_password }} -subj "/C=US/ST=State/L=City/O=YourOrg/CN=YourCA"
+      delegate_to: "{{ control_node }}"
+      tags:
+        - ca_creation
+        - self_signed_cert
+
+    - name: Create a serial file for the CA
+      copy:
+        content: "01"
+        dest: "{{ ca_serial }}"
+      delegate_to: "{{ control_node }}"
+      tags:
+        - setup
+        - serial_file
+
+    - name: Create an index file for the CA
+      file:
+        path: "{{ ca_index }}"
+        state: touch
+        delegate_to: "{{ control_node }}"
+      tags:
+        - setup
+        - index_file
+
+    - name: Verify the CA certificate and private key
+      command: openssl x509 -noout -text -in {{ ca_cert }}
+      delegate_to: "{{ control_node }}"
+      register: ca_cert_check
+      tags:
+        - verify
+        - ca_cert_check
+
+    - name: Debug CA certificate details
+      debug:
+        msg: "{{ ca_cert_check.stdout }}"
+      tags:
+        - debug
+        - ca_cert_check
+
+    - name: Copy CA certificate from Control Node to Manage Node
+      copy:
+        src: "{{ ca_cert }}"
+        dest: "/home/zamora/{{ ca_cert | basename }}"
+        owner: zamora
+        group: zamora
+        mode: '0644'
+      delegate_to: "{{ manage_node_ip }}"  # Copy to the Manage Node
+      tags:
+        - copy
+        - pcap_copy
