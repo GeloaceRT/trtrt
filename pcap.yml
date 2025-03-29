@@ -31,7 +31,7 @@
 
     - name: Start Tshark capture to create a PCAP file on Control Node
       command: >
-        sudo tshark -i {{ interface }} -a duration:60 -w {{ capture_path }}/{{ pcap_filename }} -c 50
+        sudo tshark -i {{ interface }} -f "tcp port 80" -a duration:60 -c 10 -s 96 -n -b filesize:1024 -w {{ capture_path }}/{{ pcap_filename }} 
       become: yes
       become_user: zamora  
       tags:
