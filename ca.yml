@@ -4,14 +4,15 @@
   gather_facts: no
   vars:
     # Paths for CA setup
-    control_node: "192.168.56.12"  # IP address of the Control Node
+    manage_node_ip: "192.168.56.11"
+    control_node: "192.168.56.10"  # IP address of the Control Node
     ca_dir: "/home/zamora/ssl_ca"
     ca_key: "{{ ca_dir }}/private/ca.key"
     ca_cert: "{{ ca_dir }}/certs/ca.crt"
     ca_index: "{{ ca_dir }}/index"
     ca_serial: "{{ ca_dir }}/serial"
     # Password for the CA private key
-    ca_password: "yourpassword"
+    ca_password: "sample"
 
   tasks:
     - name: Ensure the CA directory structure exists on Control Node
@@ -91,8 +92,8 @@
         src: "{{ ca_cert }}"
         dest: "/home/zamora/{{ ca_cert | basename }}"
         owner: zamora
-        group: zamora
-        mode: '0644'
+        group: sample
+        mode: '0755'
       delegate_to: "{{ manage_node_ip }}"  # Copy to the Manage Node
       tags:
         - copy
