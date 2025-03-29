@@ -1,14 +1,15 @@
 ---
-- name: Capture network traffic and save as PCAP file on Ubuntu
+- name: Capture network traffic and save as PCAP file on Control Node and copy to Manage Node
   hosts: ControlNode  # This targets the Control Node for traffic capture
   gather_facts: yes  # Gather facts to determine the OS
   vars:
     capture_path: "/home/zamora/CPE213/TIP_HOA-8.1_ZAMORA_Angelo"
     pcap_filename: "capture.pcap"  # Name of the PCAP file
     interface: "eth0"  # Network interface to capture on (e.g., eth0, wlan0, etc.)
+    manage_node_ip: "192.168.56.11"  # IP address of the Manage Node
 
   tasks:
-    - name: Ensure the capture directory exists
+    - name: Ensure the capture directory exists on Control Node
       file:
         path: "{{ capture_path }}"
         state: directory
@@ -16,13 +17,13 @@
         group: zamora
         mode: '0755'
 
-    - name: Install tshark on Ubuntu
+    - name: Install tshark on Ubuntu (Control Node)
       apt:
         name: tshark
         state: present
       become: yes
 
-    - name: Start Tshark capture to create a PCAP file
+    - name: Start Tshark capture to create a PCAP file on Control Node
       command: >
         sudo tshark -i {{ interface }} -w {{ capture_path }}/{{ pcap_filename }}
       register: capture_output
@@ -35,11 +36,21 @@
       pause:
         seconds: 10
 
-    - name: Verify the capture file exists
+    - name: Verify the capture file exists on Control Node
       stat:
         path: "{{ capture_path }}/{{ pcap_filename }}"
       register: pcap_file_stat
 
-    - name: Debug output to confirm the file existence
+    - name: Debug output to confirm the file existence on Control Node
       debug:
         msg: "PCAP file exists at: {{ capture_path }}/{{ pcap_filename }} - {{ pcap_file_stat.stat.exists }}"
+
+    - name: Copy PCAP file from Control Node to Manage Node
+      copy:
+        src: "{{ capture_path }}/{{ pcap_filename }}"
+        dest: "/home/zamora/{{ pcap_filename }}"
+        owner: zamora
+        group: zamora
+        mode: '0644'
+      delegate_to: "{{ manage_node_ip }}"  # This directs the copy to the Manage Node
+
