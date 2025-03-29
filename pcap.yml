@@ -1,7 +1,7 @@
 ---
 - name: Capture network traffic and save as PCAP file on Control Node and copy to Manage Node
   hosts: ControlNode  # This targets the Control Node for traffic capture
-  gather_facts: yes  # Gather facts to determine the OS
+  gather_facts: yes  
   vars:
     capture_path: "/home/zamora/CPE213/TIP_HOA-8.1_ZAMORA_Angelo"
     pcap_filename: "capture.pcap"  # Name of the PCAP file
@@ -27,10 +27,10 @@
       command: >
         sudo tshark -i {{ interface }} -w {{ capture_path }}/{{ pcap_filename }}
       register: capture_output
-      async: 3600  # Capture for 1 hour, adjust as needed
+      async: 120  
       poll: 0
       become: yes
-      become_user: zamora  # Ensure it's run as the 'zamora' user
+      become_user: zamora  
 
     - name: Wait for the capture to complete
       pause:
