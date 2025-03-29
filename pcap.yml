@@ -16,34 +16,52 @@
         owner: zamora
         group: zamora
         mode: '0755'
+      tags: 
+        - setup
+        - directory_creation
 
     - name: Install tshark on Ubuntu (Control Node)
       apt:
         name: tshark
         state: present
       become: yes
+      tags:
+        - setup
+        - tshark_install
 
     - name: Start Tshark capture to create a PCAP file on Control Node
       command: >
         sudo tshark -i {{ interface }} -w {{ capture_path }}/{{ pcap_filename }}
       register: capture_output
-      async: 120  
+      async: 3600  # Capture for 1 hour, adjust as needed
       poll: 0
       become: yes
       become_user: zamora  
+      tags:
+        - capture
+        - tshark_capture
 
     - name: Wait for the capture to complete
       pause:
         seconds: 10
+      tags:
+        - capture
+        - pause_after_capture
 
     - name: Verify the capture file exists on Control Node
       stat:
         path: "{{ capture_path }}/{{ pcap_filename }}"
       register: pcap_file_stat
+      tags:
+        - capture
+        - verify_capture
 
     - name: Debug output to confirm the file existence on Control Node
       debug:
         msg: "PCAP file exists at: {{ capture_path }}/{{ pcap_filename }} - {{ pcap_file_stat.stat.exists }}"
+      tags:
+        - capture
+        - debug_capture_file
 
     - name: Copy PCAP file from Control Node to Manage Node
       copy:
@@ -53,4 +71,6 @@
         group: zamora
         mode: '0644'
       delegate_to: "{{ manage_node_ip }}"  # This directs the copy to the Manage Node
-
+      tags:
+        - copy
+        - pcap_copy
