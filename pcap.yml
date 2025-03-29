@@ -1,0 +1,45 @@
+---
+- name: Capture network traffic and save as PCAP file on Ubuntu
+  hosts: ControlNode  # This targets the Control Node for traffic capture
+  gather_facts: yes  # Gather facts to determine the OS
+  vars:
+    capture_path: "/home/zamora/CPE213/TIP_HOA-8.1_ZAMORA_Angelo"
+    pcap_filename: "capture.pcap"  # Name of the PCAP file
+    interface: "eth0"  # Network interface to capture on (e.g., eth0, wlan0, etc.)
+
+  tasks:
+    - name: Ensure the capture directory exists
+      file:
+        path: "{{ capture_path }}"
+        state: directory
+        owner: zamora
+        group: zamora
+        mode: '0755'
+
+    - name: Install tshark on Ubuntu
+      apt:
+        name: tshark
+        state: present
+      become: yes
+
+    - name: Start Tshark capture to create a PCAP file
+      command: >
+        sudo tshark -i {{ interface }} -w {{ capture_path }}/{{ pcap_filename }}
+      register: capture_output
+      async: 3600  # Capture for 1 hour, adjust as needed
+      poll: 0
+      become: yes
+      become_user: zamora  # Ensure it's run as the 'zamora' user
+
+    - name: Wait for the capture to complete
+      pause:
+        seconds: 10
+
+    - name: Verify the capture file exists
+      stat:
+        path: "{{ capture_path }}/{{ pcap_filename }}"
+      register: pcap_file_stat
+
+    - name: Debug output to confirm the file existence
+      debug:
+        msg: "PCAP file exists at: {{ capture_path }}/{{ pcap_filename }} - {{ pcap_file_stat.stat.exists }}"
