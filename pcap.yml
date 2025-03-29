@@ -5,7 +5,7 @@
   vars:
     capture_path: "/home/zamora/CPE213/TIP_HOA-8.1_ZAMORA_Angelo"
     pcap_filename: "capture.pcap"  # Name of the PCAP file
-    interface: "eth0"  # Network interface to capture on (e.g., eth0, wlan0, etc.)
+    interface: "enp0s3"  # Network interface to capture on (e.g., eth0, wlan0, etc.)
     manage_node_ip: "192.168.56.11"  # IP address of the Manage Node
 
   tasks:
@@ -31,10 +31,7 @@
 
     - name: Start Tshark capture to create a PCAP file on Control Node
       command: >
-        sudo tshark -i {{ interface }} -w {{ capture_path }}/{{ pcap_filename }}
-      register: capture_output
-      async: 3600  # Capture for 1 hour, adjust as needed
-      poll: 0
+        sudo tshark -i {{ interface }} -a duration:60 -w {{ capture_path }}/{{ pcap_filename }} -c 50
       become: yes
       become_user: zamora  
       tags:
