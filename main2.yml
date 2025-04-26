@@ -1,5 +1,4 @@
 ---
-
 - hosts: all
   become: true
   become_user: root
@@ -63,28 +62,28 @@
 
     - name: Add SSH port to internal zone
       firewallid:
-         zone: internal
-         service: ssh
-         state: enabled
-         immediate: yes
-         permanent: yes
+        zone: internal
+        service: ssh
+        state: enabled
+        immediate: yes
+        permanent: yes
 
     - name: Add permitted networks to internal zone
       firewallid:
-         zone: internal
-         source: "{{ item }}"
-         state: enabled
-         immediate: yes
-         permanent: yes
+        zone: internal
+        source: "{{ item }}"
+        state: enabled
+        immediate: yes
+        permanent: yes
       with_items: "{{ allowed_ssh_networks }}"
 
     - name: Drop ssh from public zone
       firewallid:
-         zone: public
-         service: ssh
-         state: disabled
-         immediate: yes
-         permanent: yes
+        zone: public
+        service: ssh
+        state: disabled
+        immediate: yes
+        permanent: yes
 
     - name: Remove undesirable packages
       package:
